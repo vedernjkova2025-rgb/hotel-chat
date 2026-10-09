@@ -29,8 +29,8 @@ function chatMarkup() {
   if(!state.started) return `${header()}<main class="welcome"><div class="welcome-card">${icon('startContext-imgIcn.svg','welcome-avatar')}<b>Хотите узнать, что умеет бот?</b><p>Нажмите <b>«Начать»</b>, чтобы запустить чат с ботом и оценить его в деле</p></div></main><footer class="composer"><button class="primary start" data-action="start">Начать</button></footer>`;
   return `${header()}<main class="messages" role="log" aria-label="История переписки" aria-live="polite" aria-relevant="additions"><div class="day-label">Сегодня</div>${state.chat.map(m=>{
     const guest=m.who==='guest';
-    return `<div class="message-row ${guest?'outgoing':'incoming'}"><div class="bubble ${guest?'guest':'bot'}">${guest?QUESTIONS[m.key]:MESSAGES[m.key]}</div>${m.key==='booking'&&!guest?`<button class="booking-cta" data-action="open">${icon('external-link.svg')}<span>Перейти к бронированию</span></button>`:''}</div>`;
-  }).join('')}</main><footer class="composer"><button class="primary open-button" data-action="open">${icon('context2-imgIcn1.svg')}Открыть</button><button class="message-field ${state.draft?'filled':''}" data-action="type" aria-label="Поле сообщения" ${!state.question||state.pending.length?'disabled':''}>${state.draft||'Сообщение'}</button>${state.draft?`<button class="primary send" data-action="send" aria-label="Отправить сообщение">${icon('send.svg')}</button>`:'<span class="composer-attachment" aria-hidden="true"></span><span class="composer-mic" aria-hidden="true"></span>'}</footer>`;
+    return `<div class="message-row ${guest?'outgoing':'incoming'}"><div class="bubble ${guest?'guest':m.who==='manager'?'manager':m.who==='notice'?'notice':'bot'}">${guest?QUESTIONS[m.key]:MESSAGES[m.key]}</div>${m.key==='booking'&&!guest?`<button class="booking-cta" data-action="open">${icon('external-link.svg')}<span>Перейти к бронированию</span></button>`:''}</div>`;
+  }).join('')}${state.completed?`<div class="completion-card"><div class="completion-badge">🎉 Тренажёр завершён</div><p>Вы успешно изучили работу чата и модуля бронирования.</p><button class="primary restart-btn" data-action="reset">Нажми сюда, чтобы пройти еще раз</button></div>`:''}</main><footer class="composer"><button class="primary open-button" data-action="open">${icon('context2-imgIcn1.svg')}Открыть</button><button class="message-field ${state.draft?'filled':''}" data-action="type" aria-label="Поле сообщения" ${!state.question||state.pending.length||state.completed?'disabled':''}>${state.draft||'Сообщение'}</button>${state.draft?`<button class="primary send" data-action="send" aria-label="Отправить сообщение">${icon('send.svg')}</button>`:'<span class="composer-attachment" aria-hidden="true"></span><span class="composer-mic" aria-hidden="true"></span>'}</footer>`;
 }
 function roomCard(key) {
   const r=ROOMS[key],b=currentBooking(state);
@@ -72,9 +72,8 @@ function render() {
   if(oldScroll)scrollPositions[oldScroll.dataset.scroll]=oldScroll.scrollTop;
   const oldChat=app.querySelector('.messages');const chatTop=oldChat?.scrollTop||0;
   const focused=document.activeElement?.dataset;
-  if(state.completed){app.innerHTML='<main class="success"><h1>Вы справились с&nbsp;заданием!</h1></main>';return;}
   app.innerHTML=`<div class="phone"><section class="chat" ${state.mini?'inert aria-hidden="true"':''}>${chatMarkup()}</section>${state.mini?`<section class="mini fullscreen" role="dialog" aria-modal="true" aria-label="Бронирование номера" ${panel?'inert aria-hidden="true"':''}>${header(true)}${state.step==='rate'?rateMarkup():roomMarkup()}</section>`:''}${panel==='dates'?calendarMarkup():panel==='guests'?guestsMarkup():''}</div>`;
-  const messages=app.querySelector('.messages');if(messages)messages.scrollTop=state.chat.length!==previousChatLength?messages.scrollHeight:chatTop;
+  const messages=app.querySelector('.messages');if(messages)messages.scrollTop=state.chat.length!==previousChatLength||state.completed?messages.scrollHeight:chatTop;
   const scroller=app.querySelector('.mini-scroll');if(scroller)scroller.scrollTop=scrollPositions[state.step];
   if(panel!==previousPanel || state.mini!==previousMini || state.step!==previousStep) {
     const target=panel?app.querySelector('.dialog button'):state.mini?app.querySelector('.mini button'):returnFocus?app.querySelector(`[data-action="${returnFocus}"]`):null;
@@ -93,6 +92,7 @@ app.addEventListener('click',event=>{
   if(action==='send')dispatch({type:'SEND'});
   if(action==='close')dispatch({type:'CLOSE'});
   if(action==='back')dispatch({type:'BACK'});
+  if(action==='reset'){sessionStorage.removeItem(STORAGE);state=initialState();panel=null;dateDraft=null;guestsDraft=null;returnFocus=null;save();render();}
   if(action==='room'){scrollPositions.rate=0;dispatch({type:'SELECT_ROOM',room:button.dataset.room});}
   if(action==='rate')dispatch({type:'SELECT_RATE'});
   if(action==='dates'){const b=currentBooking(state);dateDraft={start:b.start,end:b.end,anchor:b.start,selectingEnd:false};panel='dates';returnFocus='dates';render();}
@@ -120,7 +120,6 @@ document.addEventListener('keydown',event=>{
   }
 });
 setInterval(()=>{if(state.pending[0]?.due<=Date.now())dispatch({type:'TICK'});},150);
-// The visual viewport follows browser chrome and the on-screen keyboard on mobile.
 function viewport(){document.documentElement.style.setProperty('--viewport-height',`${window.visualViewport?.height||window.innerHeight}px`);}
 window.visualViewport?.addEventListener('resize',viewport);window.addEventListener('resize',viewport);
 viewport();render();
