@@ -181,3 +181,34 @@ button img{pointer-events:none}
 .composer-attachment,.composer-mic{flex:none;width:26px;height:36px;background-image:url('./context2-imgImage3.png');background-size:360px 800px;background-repeat:no-repeat}
 .composer-attachment{background-position:-282px -742px}
 .composer-mic{background-position:-324px -742px}
+.completion-card{
+  background:#ffffff;
+  border-radius:16px;
+  padding:16px 14px;
+  margin:16px 8px 10px;
+  text-align:center;
+  box-shadow:0 4px 18px rgba(0,0,0,0.12);
+  border:1px solid #cce2ff;
+  animation:fadeIn .3s ease;
+}
+.completion-badge{
+  font-size:15px;
+  font-weight:700;
+  color:#075bba;
+  margin-bottom:6px;
+}
+.completion-card p{
+  font-size:12px;
+  line-height:16px;
+  color:#555;
+  margin-bottom:12px;
+}
+.restart-btn{
+  width:100%;
+  font-size:13px;
+  font-weight:600;
+  border-radius:8px;
+  background:#057bf5;
+  padding:10px 12px;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
