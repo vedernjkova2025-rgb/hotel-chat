@@ -74,7 +74,7 @@ button img{pointer-events:none}
 .message-row:last-child{margin-bottom:0}
 .message-row.outgoing{align-items:flex-end}
 .bubble{padding:8px 10px;font-size:13px;line-height:17px;max-width:min(84%,290px);overflow-wrap:break-word}
-.bubble.bot{background:#fff;border-radius:15px 15px 15px 5px;color:#050505}
+.bubble.bot, .bubble.manager, .bubble.notice{background:#fff;border-radius:15px 15px 15px 5px;color:#050505}
 .bubble.guest{background:#d8efff;border-radius:15px 15px 5px 15px;width:fit-content}
 .bubble p{margin-top:8px}
 .bubble ul{padding-left:18px;margin:8px 0 0}
