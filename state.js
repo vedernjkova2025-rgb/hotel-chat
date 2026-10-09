@@ -32,7 +32,7 @@ export function roomPrice(state, room) {
   return booking.quoted ? Math.round(ROOMS[room].price * nights(booking) / 2 * 100)/100 : ROOMS[room].initialPrice;
 }
 export function nextQuestion(s) {
-  if (!s.started || s.pending.length || s.managerDone) return null;
+  if (!s.started || s.pending.length || s.completed) return null;
   if (s.chat.some(m=>m.key==='breakfast' && m.who==='bot')) return 'early';
   if (s.branch) return 'breakfast';
   return 'booking';
@@ -40,7 +40,7 @@ export function nextQuestion(s) {
 export function transition(state, event, now = Date.now()) {
   const s = structuredClone(state);
   const message = (key, who='bot') => s.chat.push({key,who});
-  if (s.completed) return s;
+  if (s.completed && event.type !== 'START') return s;
   switch(event.type) {
     case 'START': if (!s.started) { s.started=true; message('greeting'); } break;
     case 'TYPE': s.question=nextQuestion(s); if (!s.pending.length && QUESTIONS[s.question]) s.draft=QUESTIONS[s.question]; break;
@@ -49,8 +49,8 @@ export function transition(state, event, now = Date.now()) {
       const key=s.question;
       if (key==='booking') { if(s.branch===1) break; s.branch=2; }
       message(key,'guest'); s.draft=''; s.question=null;
-      if(key==='booking') s.pending=[{key:'booking',due:now+700}];
-      if(key==='breakfast') s.pending=[{key:'breakfast',due:now+700}];
+      if(key==='booking') s.pending=[{key:'booking',due:now+600}];
+      if(key==='breakfast') s.pending=[{key:'breakfast',due:now+600}];
       if(key==='early') s.pending=[{key:'waiting',due:now+600},{key:'connected',due:now+1600},{key:'manager',due:now+2600}];
       break;
     }
@@ -58,7 +58,10 @@ export function transition(state, event, now = Date.now()) {
       if(s.pending[0]?.due<=now) {
         const next=s.pending.shift(); message(next.key,next.key==='manager'?'manager':next.key==='connected'?'notice':'bot');
         if(next.key==='breakfast') s.question='early';
-        if(next.key==='manager') s.managerDone=true;
+        if(next.key==='manager') {
+          s.managerDone=true;
+          s.completed=true; // Завершение тренажёра сразу после ответа менеджера!
+        }
         if(next.key==='waiting' && s.pending[0]?.key==='connected') s.pending[0].due=now+1000;
         if(next.key==='connected' && s.pending[0]?.key==='manager') s.pending[0].due=now+1000;
         if(s.pending[0] && s.pending[0].due<=now) s.pending[0].due=now+1000;
@@ -85,7 +88,12 @@ export function transition(state, event, now = Date.now()) {
         currentBooking(s).guests=event.guests;
         currentBooking(s).quoted=s.branch===2 || (event.guests.length===1 && event.guests[0].adults===1);
       } break;
-    case 'SELECT_RATE': if(s.mini && s.step==='rate' && s.managerDone) { s.completed=true;s.mini=false; } break;
+    case 'SELECT_RATE': 
+      if(s.mini && s.step==='rate') {
+        s.mini=false; // Возвращаемся в чат продолжать диалог
+        s.question=nextQuestion(s);
+      } 
+      break;
   }
   return s;
 }
